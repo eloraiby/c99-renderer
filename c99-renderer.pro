@@ -6,6 +6,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    renderer
+    renderer \
+    c99-3d-math/3dmath
 
 
