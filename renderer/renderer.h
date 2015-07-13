@@ -35,8 +35,50 @@ typedef enum {
 
 } RENDER_MESSAGE;
 
+// texture
+typedef enum {
+	TEXF_R8G8B8,
+	TEXF_A8R8G8B8,
+} TEXTURE_FORMAT;
+
+typedef struct {
+	uint32			width;
+	uint32			height;
+	TEXTURE_FORMAT		fmt;
+	void*			data;
+} texture_2d_t;
+
+// 2d/ui texture
+typedef struct {
+	texture_2d_t		tex;
+} rm_2d_texture_t;
+
+// 2d textured/colored rectangle batch
+typedef struct {
+	vec2_t			position;
+	vec2_t			uv;
+	vec4_t			color;
+} rm_batch2d_vertex_t;
+
+typedef struct {
+	rm_batch2d_vertex_t	min;
+	rm_batch2d_vertex_t	max;
+} rm_batch2d_rect_t;
+
+typedef struct {
+	uint16			count;
+	rm_batch2d_rect_t*	rects;
+} rm_batch2d_t;
+
+// the render message
 typedef struct render_message_s {
 	RENDER_MESSAGE		type;
+
+	union {
+		rm_batch2d_t	batch2d;
+		rect_t		clip_region;
+		rm_2d_texture_t	texture_2d;
+	};
 } render_message_t;
 
 #endif // RENDERER_H
