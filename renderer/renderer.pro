@@ -15,6 +15,8 @@ TARGET = renderer
 TEMPLATE = lib
 #CONFIG += staticlib
 
+QMAKE_CFLAGS	+= -DBUILDING_RENDERING_DLL
+
 SOURCES += \
     renderer.c \
     gl_core_2_1.c

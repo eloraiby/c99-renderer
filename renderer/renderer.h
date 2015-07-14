@@ -19,9 +19,36 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-
 #include <mathlib.h>
 
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef BUILDING_RENDERING_DLL
+    #ifdef __GNUC__
+      #define DLL_RENDERING_PUBLIC __attribute__ ((dllexport))
+    #else
+      #define DLL_RENDERING_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define DLL_RENDERING_PUBLIC __attribute__ ((dllimport))
+    #else
+      #define DLL_RENDERING_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+  #define DLL_RENDERING_LOCAL
+#else
+  #if __GNUC__ >= 4
+    #define DLL_RENDERING_PUBLIC __attribute__ ((visibility ("default")))
+    #define DLL_RENDERING_LOCAL  __attribute__ ((visibility ("hidden")))
+  #else
+    #define DLL_RENDERING_PUBLIC
+    #define DLL_RENDERING_LOCAL
+  #endif
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef enum {
 
 	RM_FLUSH,		// flush the message queue to the screen
@@ -80,5 +107,11 @@ typedef struct render_message_s {
 		rm_2d_texture_t	texture_2d;
 	};
 } render_message_t;
+
+DLL_RENDERING_PUBLIC bool renderer_init();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // RENDERER_H
