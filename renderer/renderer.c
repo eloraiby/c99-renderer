@@ -20,12 +20,14 @@
 #include "renderer.h"
 #include "gl_core_2_1.h"
 
+#include <GLFW/glfw3.h>
+
 bool
 renderer_init() {
-	int	success = ogl_LoadFunctions();
-	int	major	= ogl_GetMajorVersion();
-	int	minor	= ogl_GetMinorVersion();
-
-	printf("OGL: %d - %d.%d", success, major, minor);
+	if( glfwInit() == GL_TRUE ) {
+		return true;
+	} else {
+		return false;
+	}
 }
 

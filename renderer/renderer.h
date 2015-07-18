@@ -49,36 +49,23 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef enum {
-
-	RM_FLUSH,		// flush the message queue to the screen
-	RM_CLEAR_BUFFER,	// clear the screen buffer
-
-	// 2d related messages
-	RM_SET_2D_TEXTURE,
-	RM_BATCH_2D,		// render 2d rectangle batch
-	RM_PUSH_2D_REGION,	// push clip region
-	RM_POP_2D_REGION,	// pop clip region
-
-} RENDER_MESSAGE;
 
 // texture
 typedef enum {
-	TEXF_R8G8B8,
-	TEXF_A8R8G8B8,
+	TEXF_R8G8B8	= 0x00000888,
+	TEXF_A8R8G8B8	= 0x00008888,
 } TEXTURE_FORMAT;
 
-typedef struct {
-	uint32			width;
-	uint32			height;
-	TEXTURE_FORMAT		fmt;
-	void*			data;
-} texture_2d_t;
+#define TILE_WIDTH	64
+#define TILE_HEIGHT	64
+
 
 // 2d/ui texture
 typedef struct {
-	texture_2d_t		tex;
-} rm_2d_texture_t;
+	sint32			rows;
+	sint32			columns;
+	TEXTURE_FORMAT		fmt;
+} texture2d_t;
 
 // 2d textured/colored rectangle batch
 typedef struct {
@@ -92,23 +79,67 @@ typedef struct {
 	rm_batch2d_vertex_t	max;
 } rm_batch2d_rect_t;
 
+struct canvas_s;
+typedef struct canvas_s canvas_t;
+
+typedef enum {
+	CM_NONE,
+	CM_POINTER_MOVE,	// move inside the canvas
+	CM_POINTER_PRESS,	// press inside the canvas
+	CM_POINTER_RELEASE,	// release inside the canvas
+	CM_SCROLL,		// scroll canvas
+	CM_ENTER,		// enter canvas
+	CM_LEAVE,		// leave canvas
+	CM_KEY_PRESS,
+	CM_KEY_RELEASE,
+} CANVAS_MESSAGE;
+
+typedef enum {
+	CM_PBUTTON_0	= 0x0001,
+	CM_PBUTTON_1	= 0x0002,
+	CM_PBUTTON_2	= 0x0004,
+	CM_PBUTTON_3	= 0x0008,
+} POINTER_BUTTON;
+
 typedef struct {
-	uint16			count;
-	rm_batch2d_rect_t*	rects;
-} rm_batch2d_t;
-
-// the render message
-typedef struct render_message_s {
-	RENDER_MESSAGE		type;
-
+	CANVAS_MESSAGE	type;
 	union {
-		rm_batch2d_t	batch2d;
-		rect_t		clip_region;
-		rm_2d_texture_t	texture_2d;
-	};
-} render_message_t;
+		struct {
+			vec2_t		position;
+			sint32		buttons;
+		} pointer_move;
 
-DLL_RENDERING_PUBLIC bool renderer_init();
+		struct {
+			vec2_t		position;
+			POINTER_BUTTON	button;
+		} pointer_press_release;
+
+		struct {
+			float		pos;
+		} scroll;
+	};
+} canvas_message_t;
+
+DLL_RENDERING_PUBLIC canvas_t*			canvas_create(const char* title, sint32 width, sint32 height);
+DLL_RENDERING_PUBLIC void			canvas_release(canvas_t* canvas);
+DLL_RENDERING_PUBLIC rect_t			canvas_get_screen_rect(canvas_t* canvas);
+DLL_RENDERING_PUBLIC void			canvas_set_screen_rect(canvas_t* canvas, rect_t r);
+DLL_RENDERING_PUBLIC const char*		canvas_get_title(canvas_t* canvas);
+DLL_RENDERING_PUBLIC void			canvas_set_title(canvas_t* canvas, const char* title);
+
+DLL_RENDERING_PUBLIC void			canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex);
+DLL_RENDERING_PUBLIC void			canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const vec4_t* pixels);
+DLL_RENDERING_PUBLIC void			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
+DLL_RENDERING_PUBLIC void			canvas_ui_push_region(canvas_t* canvas, rect_t r);
+DLL_RENDERING_PUBLIC rect_t			canvas_ui_pop_region(canvas_t* canvas);
+DLL_RENDERING_PUBLIC rect_t			canvas_ui_relative_top_region(canvas_t* canvas);
+DLL_RENDERING_PUBLIC rect_t			canvas_ui_absolute_top_region(canvas_t* canvas);
+
+DLL_RENDERING_PUBLIC void			canvas_clear(canvas_t* canvas);
+DLL_RENDERING_PUBLIC void			canvas_flush(canvas_t* canvas);
+
+DLL_RENDERING_PUBLIC canvas_message_t		canvas_poll_message();
+DLL_RENDERING_PUBLIC canvas_message_t		canvas_wait_message();
 
 #ifdef __cplusplus
 }

@@ -16,9 +16,17 @@
 ** <http://www.gnu.org/licenses/>.
 **
 */
-#include <renderer.h>
+#ifndef CANVAS_H
+#define CANVAS_H
 
-int
-main(int argc, char *argv[]) {
-	return 0;
-}
+#include <mathlib.h>
+#include <GLFW/glfw3.h>
+
+#define MAX_TITLE_SIZE	128
+
+struct canvas_s {
+	char		title[MAX_TITLE_SIZE];
+	GLFWwindow*	window;
+};
+
+#endif // CANVAS_H

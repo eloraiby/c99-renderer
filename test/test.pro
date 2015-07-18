@@ -4,20 +4,13 @@
 #
 #-------------------------------------------------
 
-QT       += core
-
-QT       -= gui
+QT       -= core gui
 
 TARGET = test
 CONFIG   += console
 CONFIG   -= app_bundle
-unix {
-	CONFIG	+= link_pkgconfig
-	PKGCONFIG	+= glfw3
-}
 
 TEMPLATE = app
-
 
 SOURCES += \
     main.c

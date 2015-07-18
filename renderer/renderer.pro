@@ -17,12 +17,19 @@ TEMPLATE = lib
 
 QMAKE_CFLAGS	+= -DBUILDING_RENDERING_DLL
 
+unix {
+	CONFIG	+= link_pkgconfig
+	PKGCONFIG	+= glfw3
+}
+
 SOURCES += \
     renderer.c \
-    gl_core_2_1.c
+    gl_core_2_1.c \
+    canvas.c
 
 HEADERS += renderer.h \
-    gl_core_2_1.h
+    gl_core_2_1.h \
+    internal/canvas.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
