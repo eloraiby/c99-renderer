@@ -22,11 +22,15 @@
 #include <mathlib.h>
 #include <GLFW/glfw3.h>
 
+#include "../renderer.h"
+
 #define MAX_TITLE_SIZE	128
 
 struct canvas_s {
 	char		title[MAX_TITLE_SIZE];
 	GLFWwindow*	window;
+	texture2d_t	ui_tex;
+	GLuint		gl_ui_tex;
 };
 
 #endif // CANVAS_H

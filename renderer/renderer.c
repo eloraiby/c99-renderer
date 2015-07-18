@@ -22,7 +22,7 @@
 
 #include <GLFW/glfw3.h>
 
-bool
+DLL_RENDERING_PUBLIC bool
 renderer_init() {
 	if( glfwInit() == GL_TRUE ) {
 		return true;

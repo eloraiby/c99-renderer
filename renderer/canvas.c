@@ -18,6 +18,8 @@
 */
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
 #include <renderer.h>
 
 #include "gl_core_2_1.h"
@@ -34,11 +36,14 @@ canvas_create(const char* title, sint32 width, sint32 height) {
 			int	minor	= ogl_GetMinorVersion();
 			size_t tlen	= strlen(title);
 			canvas_t*	canvas	= (canvas_t*)malloc(sizeof(canvas_t));
+			memset(canvas, 0, sizeof(canvas_t));
 			canvas->window	= win;
-			memcpy(canvas->title, title, tlen > MAX_TITLE_SIZE ? MAX_TITLE_SIZE - 1 : tlen);
-			canvas->title[MAX_TITLE_SIZE - 1] = '\0';
+			memcpy(canvas->title, title, tlen > MAX_TITLE_SIZE - 1 ? MAX_TITLE_SIZE - 1 : tlen);
 
-			printf("OGL: %d.%d", major, minor);
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+			printf("OpenGL version: %d.%d\n", major, minor);
 			return canvas;
 		} else	return NULL;
 	} else	return NULL;
@@ -46,6 +51,9 @@ canvas_create(const char* title, sint32 width, sint32 height) {
 
 DLL_RENDERING_PUBLIC void
 canvas_release(canvas_t* canvas) {
+	if( 0 != canvas->gl_ui_tex ) {
+		glDeleteTextures(1, &canvas->gl_ui_tex);
+	}
 	glfwDestroyWindow(canvas->window);
 }
 
@@ -89,16 +97,87 @@ canvas_set_title(canvas_t* canvas, const char* title) {
 	glfwSetWindowTitle(canvas->window, title);
 }
 
-//DLL_RENDERING_PUBLIC void			canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex);
-//DLL_RENDERING_PUBLIC void			canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const vec4_t* pixels);
+DLL_RENDERING_PUBLIC bool
+canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex) {
+	glfwMakeContextCurrent(canvas->window);
+
+	if( 0 == canvas->gl_ui_tex ) {
+		glGenTextures(1, &canvas->gl_ui_tex);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, canvas->gl_ui_tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	if( TEXF_A8R8G8B8 != tex.fmt ) {
+		fprintf(stderr, "ERROR: canvas_ui_set_texture: the ui texture is RGBA, given RGB...\n");
+		return false;
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.columns * TILE_WIDTH, tex.rows * TILE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	canvas->ui_tex	= tex;
+
+	return true;
+}
+
+DLL_RENDERING_PUBLIC bool
+canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const color4b_t* pixels) {
+	glfwMakeContextCurrent(canvas->window);
+
+	if( 0 == canvas->gl_ui_tex ) {
+		fprintf(stderr, "ERROR: canvas_ui_set_texture_tile: no call canvas_ui_set_texture has been made before this call...\n");
+		return false;
+	}
+
+	if( row >= canvas->ui_tex.rows ) {
+		fprintf(stderr, "ERROR: canvas_ui_set_texture_tile: given row %d, max is %d...\n", row, canvas->ui_tex.rows - 1);
+		return false;
+	}
+
+	if( column >= canvas->ui_tex.columns ) {
+		fprintf(stderr, "ERROR: canvas_ui_set_texture_tile: given column %d, max is %d...\n", column, canvas->ui_tex.columns - 1);
+		return false;
+	}
+
+	if( TEXF_A8R8G8B8 != canvas->ui_tex.fmt ) {
+		fprintf(stderr, "ERROR: canvas_ui_set_texture_tile: the ui texture is RGBA, given RGB...\n");
+		return false;
+	}
+
+	glBindTexture(GL_TEXTURE_2D, canvas->gl_ui_tex);
+	glTexSubImage2D(GL_TEXTURE_2D,
+			0,
+			column * TILE_WIDTH,
+			row * TILE_HEIGHT,
+			canvas->ui_tex.columns * TILE_WIDTH,
+			canvas->ui_tex.rows * TILE_HEIGHT,
+			canvas->ui_tex.fmt,
+			GL_UNSIGNED_BYTE,
+			pixels);
+
+	return true;
+}
+
 //DLL_RENDERING_PUBLIC void			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
 //DLL_RENDERING_PUBLIC void			canvas_ui_push_region(canvas_t* canvas, rect_t r);
 //DLL_RENDERING_PUBLIC rect_t			canvas_ui_pop_region(canvas_t* canvas);
 //DLL_RENDERING_PUBLIC rect_t			canvas_ui_relative_top_region(canvas_t* canvas);
 //DLL_RENDERING_PUBLIC rect_t			canvas_ui_absolute_top_region(canvas_t* canvas);
 
-//DLL_RENDERING_PUBLIC void			canvas_clear(canvas_t* canvas);
-//DLL_RENDERING_PUBLIC void			canvas_flush(canvas_t* canvas);
+DLL_RENDERING_PUBLIC void
+canvas_clear(canvas_t* canvas) {
+	glfwMakeContextCurrent(canvas->window);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearDepth(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+DLL_RENDERING_PUBLIC void
+canvas_flush(canvas_t* canvas) {
+	glfwMakeContextCurrent(canvas->window);
+	glfwSwapBuffers(canvas->window);
+}
 
 //DLL_RENDERING_PUBLIC canvas_message_t		canvas_poll_message();
 //DLL_RENDERING_PUBLIC canvas_message_t		canvas_wait_message();

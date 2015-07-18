@@ -20,5 +20,13 @@
 
 int
 main(int argc, char *argv[]) {
+	if( !renderer_init() ) {
+		printf("failed to initialize renderer\n");
+		return 1;
+	}
+
+	canvas_t*	canvas	= canvas_create("canvas", 800, 480);
+
+	canvas_release(canvas);
 	return 0;
 }

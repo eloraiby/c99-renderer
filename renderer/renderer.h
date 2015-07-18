@@ -120,6 +120,8 @@ typedef struct {
 	};
 } canvas_message_t;
 
+DLL_RENDERING_PUBLIC bool			renderer_init();
+
 DLL_RENDERING_PUBLIC canvas_t*			canvas_create(const char* title, sint32 width, sint32 height);
 DLL_RENDERING_PUBLIC void			canvas_release(canvas_t* canvas);
 DLL_RENDERING_PUBLIC rect_t			canvas_get_screen_rect(canvas_t* canvas);
@@ -127,9 +129,10 @@ DLL_RENDERING_PUBLIC void			canvas_set_screen_rect(canvas_t* canvas, rect_t r);
 DLL_RENDERING_PUBLIC const char*		canvas_get_title(canvas_t* canvas);
 DLL_RENDERING_PUBLIC void			canvas_set_title(canvas_t* canvas, const char* title);
 
-DLL_RENDERING_PUBLIC void			canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex);
-DLL_RENDERING_PUBLIC void			canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const vec4_t* pixels);
-DLL_RENDERING_PUBLIC void			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
+DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex);
+DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture_tile_3b(canvas_t* canvas, sint32 row, sint32 column, const color3b_t* pixels);
+DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture_tile_4b(canvas_t* canvas, sint32 row, sint32 column, const color4b_t* pixels);
+DLL_RENDERING_PUBLIC bool			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
 DLL_RENDERING_PUBLIC void			canvas_ui_push_region(canvas_t* canvas, rect_t r);
 DLL_RENDERING_PUBLIC rect_t			canvas_ui_pop_region(canvas_t* canvas);
 DLL_RENDERING_PUBLIC rect_t			canvas_ui_relative_top_region(canvas_t* canvas);
