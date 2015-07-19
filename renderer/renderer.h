@@ -60,24 +60,7 @@ typedef enum {
 #define TILE_HEIGHT	64
 
 
-// 2d/ui texture
-typedef struct {
-	sint32			rows;
-	sint32			columns;
-	TEXTURE_FORMAT		fmt;
-} texture2d_t;
 
-// 2d textured/colored rectangle batch
-typedef struct {
-	vec2_t			position;
-	vec2_t			uv;
-	vec4_t			color;
-} rm_batch2d_vertex_t;
-
-typedef struct {
-	rm_batch2d_vertex_t	min;
-	rm_batch2d_vertex_t	max;
-} rm_batch2d_rect_t;
 
 struct canvas_s;
 typedef struct canvas_s canvas_t;
@@ -100,6 +83,10 @@ typedef enum {
 	CM_PBUTTON_1		= 0x0002,
 	CM_PBUTTON_2		= 0x0004,
 	CM_PBUTTON_3		= 0x0008,
+
+	CM_PBUTTON_LEFT		= 0x0001,
+	CM_PBUTTON_MIDDLE	= 0x0002,
+	CM_PBUTTON_RIGHT	= 0x0004,
 } POINTER_BUTTON;
 
 typedef enum {
@@ -245,7 +232,7 @@ typedef struct {
 
 		struct {
 			vec2_t		position;
-			sint32		buttons;
+			POINTER_BUTTON	buttons;
 		} pointer_move;
 
 		struct {
@@ -271,9 +258,8 @@ DLL_RENDERING_PUBLIC const char*		canvas_get_title(canvas_t* canvas);
 DLL_RENDERING_PUBLIC void			canvas_set_title(canvas_t* canvas, const char* title);
 
 DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture(canvas_t* canvas, sint32 columns, sint32 rows);
-DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture_tile_3b(canvas_t* canvas, sint32 row, sint32 column, const color3b_t* pixels);
-DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture_tile_4b(canvas_t* canvas, sint32 row, sint32 column, const color4b_t* pixels);
-DLL_RENDERING_PUBLIC bool			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
+DLL_RENDERING_PUBLIC bool			canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const color4b_t* pixels);
+DLL_RENDERING_PUBLIC bool			canvas_ui_render_rectangle(canvas_t* canvas, vec2_t p0, vec2_t t0, vec2_t p1, vec2_t t1, color4_t col);
 DLL_RENDERING_PUBLIC void			canvas_ui_push_region(canvas_t* canvas, rect_t r);
 DLL_RENDERING_PUBLIC rect_t			canvas_ui_pop_region(canvas_t* canvas);
 DLL_RENDERING_PUBLIC rect_t			canvas_ui_relative_top_region(canvas_t* canvas);

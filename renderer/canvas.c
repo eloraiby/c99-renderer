@@ -30,29 +30,12 @@
 *******************************************************************************/
 static void
 push_message(canvas_t* canvas, canvas_message_t msg) {
-	if( MAX_MSG_QUEUE_SIZE < canvas->message_count ) {
-		fprintf(stderr, "push_message: unhandled messages in queue exceeded the maximum allows of %d messages: DROPPING OLD MESSAGE\n", MAX_MSG_QUEUE_SIZE);
-		++canvas->message_start;
-		--canvas->message_count;
-	}
-
-	canvas->message_queue[canvas->message_count]	= msg;
-
-	++canvas->message_count;
+	cmqueue_push(&(canvas->message_queue), &msg);
 }
 
 static canvas_message_t
 pop_message(canvas_t* canvas) {
-	canvas_message_t out	= canvas->message_queue[canvas->message_start];
-
-	++canvas->message_start;
-	--canvas->message_count;
-
-	if( 0 == canvas->message_count ) { // move the head to 0
-		canvas->message_start	= 0;
-	}
-
-	return out;
+	return cmqueue_pop(&canvas->message_queue);
 }
 
 /*******************************************************************************
@@ -69,7 +52,7 @@ key_callback(GLFWwindow* window, int key, int scan, int action, int modifiers) {
 	if( modifiers && GLFW_MOD_SHIFT )	mods	|= CM_MOD_SHIFT;
 	if( modifiers && GLFW_MOD_SUPER )	mods	|= CM_MOD_SUPER;
 
-	msg.type	= action == GLFW_PRESS ? CM_KEY_PRESS : CM_KEY_RELEASE;
+	msg.type	= (action == GLFW_PRESS) ? CM_KEY_PRESS : CM_KEY_RELEASE;
 	msg.key_press_release.key	= key;
 	msg.key_press_release.mods	= mods;
 	msg.key_press_release.scan	= scan;
@@ -89,8 +72,20 @@ character_callback(GLFWwindow* window, unsigned int codepoint) {
 
 static void
 cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+	canvas_message_t	msg;
 	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
 
+	msg.type	= CM_POINTER_MOVE;
+
+	uint32	mb	= 0;
+	mb	|= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)   == GLFW_PRESS ? CM_PBUTTON_LEFT   : 0;
+	mb	|= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ? CM_PBUTTON_MIDDLE : 0;
+	mb	|= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)  == GLFW_PRESS ? CM_PBUTTON_RIGHT  : 0;
+
+	msg.pointer_move.position	= vec2(xpos, ypos);
+	msg.pointer_move.buttons	= mb;
+
+	push_message(canvas, msg);
 }
 
 static void
@@ -105,16 +100,36 @@ cursor_enter_callback(GLFWwindow* window, int entered) {
 
 static void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	canvas_message_t	msg;
 	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
 
-//    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-//	popup_menu();
+	msg.type	= (action == GLFW_PRESS) ? CM_POINTER_PRESS : CM_POINTER_RELEASE;
+
+	uint32	mb	= 0;
+	switch( button ) {
+	case GLFW_MOUSE_BUTTON_LEFT   : mb = CM_PBUTTON_LEFT  ; break;
+	case GLFW_MOUSE_BUTTON_MIDDLE : mb = CM_PBUTTON_MIDDLE; break;
+	case GLFW_MOUSE_BUTTON_RIGHT  : mb = CM_PBUTTON_RIGHT ; break;
+	}
+
+	double	pos_x, pos_y;
+	glfwGetCursorPos(window, &pos_x, &pos_y);
+
+	msg.pointer_press_release.position	= vec2(pos_x, pos_y);
+	msg.pointer_press_release.button	= mb;
+
+	push_message(canvas, msg);
 }
 
 static void
 scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	canvas_message_t	msg;
 	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
 
+	msg.type	= CM_SCROLL;
+	msg.scroll.pos	= vec2(xoffset, yoffset);
+
+	push_message(canvas, msg);
 }
 
 /*******************************************************************************
@@ -148,6 +163,15 @@ canvas_create(const char* title, sint32 width, sint32 height) {
 			glfwSetCursorEnterCallback(win, cursor_enter_callback);
 			glfwSetMouseButtonCallback(win, mouse_button_callback);
 			glfwSetScrollCallback(win, scroll_callback);
+
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			glClearDepth(1.0f);
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glfwSwapBuffers(win);
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glfwSwapBuffers(win);
 
 			return canvas;
 		} else	return NULL;
@@ -277,8 +301,7 @@ canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects)
 DLL_RENDERING_PUBLIC void
 canvas_clear(canvas_t* canvas) {
 	glfwMakeContextCurrent(canvas->window);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClearDepth(1.0f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -291,7 +314,7 @@ canvas_flush(canvas_t* canvas) {
 DLL_RENDERING_PUBLIC bool
 canvas_poll_message(canvas_t* canvas, canvas_message_t* out) {
 	glfwPollEvents();
-	if( 0 < canvas->message_count ) {
+	if( 0 < canvas->message_queue.count ) {
 		*out	= pop_message(canvas);
 		return true;
 	} else return false;
@@ -299,11 +322,14 @@ canvas_poll_message(canvas_t* canvas, canvas_message_t* out) {
 
 DLL_RENDERING_PUBLIC canvas_message_t
 canvas_wait_message(canvas_t* canvas) {
-
+	int i = 0;
 	// warning, this will block events on other threads using wait_message: better not to use
-	while( 0 == canvas->message_count ) {
+	while( 0 == canvas->message_queue.count ) {
 		glfwWaitEvents();
+		++i;
 	}
+
+	fprintf(stderr, "i = %d\n", i);
 
 	return pop_message(canvas);
 }

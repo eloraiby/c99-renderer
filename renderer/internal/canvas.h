@@ -20,6 +20,8 @@
 #define CANVAS_H
 
 #include <mathlib.h>
+#include <assert.h>
+
 #include <GLFW/glfw3.h>
 
 #include "../renderer.h"
@@ -27,14 +29,64 @@
 #define MAX_TITLE_SIZE		128
 #define MAX_MSG_QUEUE_SIZE	4096
 
+// 2d/ui texture
+typedef struct {
+	sint32			rows;
+	sint32			columns;
+	TEXTURE_FORMAT		fmt;
+} texture2d_t;
+
+// 2d textured/colored rectangle batch
+typedef struct {
+	vec2_t			position;
+	vec2_t			uv;
+	vec4_t			color;
+} rm_batch2d_vertex_t;
+
+typedef struct {
+	rm_batch2d_vertex_t	min;
+	rm_batch2d_vertex_t	max;
+} rm_batch2d_rect_t;
+
+#define MAKE_QUEUE(NAME, FNAME, TYPE, MAX_QUEUE_SIZE)	typedef struct { \
+							TYPE			data[MAX_QUEUE_SIZE]; \
+							uint32			start; \
+							uint32			count; \
+						} NAME; \
+	static inline void \
+	FNAME ## _push(NAME* queue, const TYPE* t) { \
+		if( MAX_QUEUE_SIZE < queue->count ) { \
+			fprintf(stderr, "queue_push: queue exceeded the maximum allows of %d elements: DROPPING OLD elements\n", MAX_QUEUE_SIZE); \
+			++queue->start; \
+			--queue->count; \
+		} \
+		queue->data[queue->count]	= *t; \
+		++queue->count; \
+	} \
+	 \
+	static inline TYPE \
+	FNAME ## _pop(NAME* queue) { \
+		assert(queue->count != 0); \
+		TYPE out	= queue->data[queue->start]; \
+		 \
+		++queue->start; \
+		--queue->count; \
+		 \
+		if( 0 == queue->count ) { /* move the head to 0 */ \
+			queue->start	= 0; \
+		} \
+		 \
+		return out; \
+	}
+
+MAKE_QUEUE(canvas_message_queue_t, cmqueue, canvas_message_t, MAX_MSG_QUEUE_SIZE)
+
 struct canvas_s {
 	char			title[MAX_TITLE_SIZE];
 	GLFWwindow*		window;
 	texture2d_t		ui_tex;
 	GLuint			gl_ui_tex;
-	canvas_message_t	message_queue[MAX_MSG_QUEUE_SIZE];
-	uint32			message_start;
-	uint32			message_count;
+	canvas_message_queue_t	message_queue;
 };
 
 #endif // CANVAS_H

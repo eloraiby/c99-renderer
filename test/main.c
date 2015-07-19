@@ -28,17 +28,17 @@ main(int argc, char *argv[]) {
 	}
 
 	canvas_t*		canvas	= canvas_create("canvas", 800, 480);
-	canvas_clear(canvas);
-	canvas_flush(canvas);
-	canvas_flush(canvas);
 
 	canvas_message_t	msg;
 	do {
-		canvas_flush(canvas);
+		//canvas_flush(canvas);
 		msg	= canvas_wait_message(canvas);
 
-		if( CM_CHAR == msg.type ) {
-			fprintf(stderr, "%c", msg.code_point);
+		switch( msg.type ) {
+		case CM_CHAR:		fprintf(stderr, "char: %c\n", msg.code_point); break;
+		case CM_KEY_PRESS:	fprintf(stderr, "key press: %d\n", msg.key_press_release.key); break;
+		case CM_KEY_RELEASE:	fprintf(stderr, "kwy release: %d\n", msg.key_press_release.key); break;
+		case CM_POINTER_MOVE:	fprintf(stderr, "pointer move: %f, %f - buttons: %X\n", msg.pointer_move.position.x, msg.pointer_move.position.y, msg.pointer_move.buttons);
 		}
 	} while( !(CM_KEY_PRESS == msg.type && KEY_ESCAPE == msg.key_press_release.key) );
 
