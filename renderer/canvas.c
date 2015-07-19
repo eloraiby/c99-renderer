@@ -25,6 +25,97 @@
 #include "gl_core_2_1.h"
 #include "internal/canvas.h"
 
+/*******************************************************************************
+** message handling
+*******************************************************************************/
+static void
+push_message(canvas_t* canvas, canvas_message_t msg) {
+	if( MAX_MSG_QUEUE_SIZE < canvas->message_count ) {
+		fprintf(stderr, "push_message: unhandled messages in queue exceeded the maximum allows of %d messages: DROPPING OLD MESSAGE\n", MAX_MSG_QUEUE_SIZE);
+		++canvas->message_start;
+		--canvas->message_count;
+	}
+
+	canvas->message_queue[canvas->message_count]	= msg;
+
+	++canvas->message_count;
+}
+
+static canvas_message_t
+pop_message(canvas_t* canvas) {
+	canvas_message_t out	= canvas->message_queue[canvas->message_start];
+
+	++canvas->message_start;
+	--canvas->message_count;
+
+	if( 0 == canvas->message_count ) { // move the head to 0
+		canvas->message_start	= 0;
+	}
+
+	return out;
+}
+
+/*******************************************************************************
+** transforming events to messages
+*******************************************************************************/
+static void
+key_callback(GLFWwindow* window, int key, int scan, int action, int modifiers) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+	MODIFIER		mods	= 0;
+	canvas_message_t	msg;
+
+	if( modifiers && GLFW_MOD_ALT )		mods	|= CM_MOD_ALT;
+	if( modifiers && GLFW_MOD_CONTROL )	mods	|= CM_MOD_CONTROL;
+	if( modifiers && GLFW_MOD_SHIFT )	mods	|= CM_MOD_SHIFT;
+	if( modifiers && GLFW_MOD_SUPER )	mods	|= CM_MOD_SUPER;
+
+	msg.type	= action == GLFW_PRESS ? CM_KEY_PRESS : CM_KEY_RELEASE;
+	msg.key_press_release.key	= key;
+	msg.key_press_release.mods	= mods;
+	msg.key_press_release.scan	= scan;
+
+	push_message(canvas, msg);
+}
+
+static void
+character_callback(GLFWwindow* window, unsigned int codepoint) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+
+}
+
+static void
+cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+
+}
+
+static void
+cursor_enter_callback(GLFWwindow* window, int entered) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+	if( entered ) {
+		// The cursor entered the client area of the window
+	} else {
+		// The cursor left the client area of the window
+	}
+}
+
+static void
+mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+
+//    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+//	popup_menu();
+}
+
+static void
+scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+
+}
+
+/*******************************************************************************
+** public API
+*******************************************************************************/
 DLL_RENDERING_PUBLIC canvas_t*
 canvas_create(const char* title, sint32 width, sint32 height) {
 
@@ -44,6 +135,16 @@ canvas_create(const char* title, sint32 width, sint32 height) {
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 			printf("OpenGL version: %d.%d\n", major, minor);
+
+			glfwSetWindowUserPointer(win, canvas);
+
+			glfwSetKeyCallback(win, key_callback);
+			glfwSetCharCallback(win, character_callback);
+			glfwSetCursorPosCallback(win, cursor_position_callback);
+			glfwSetCursorEnterCallback(win, cursor_enter_callback);
+			glfwSetMouseButtonCallback(win, mouse_button_callback);
+			glfwSetScrollCallback(win, scroll_callback);
+
 			return canvas;
 		} else	return NULL;
 	} else	return NULL;
@@ -98,7 +199,7 @@ canvas_set_title(canvas_t* canvas, const char* title) {
 }
 
 DLL_RENDERING_PUBLIC bool
-canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex) {
+canvas_ui_set_texture(canvas_t* canvas, sint32 columns, sint32 rows) {
 	glfwMakeContextCurrent(canvas->window);
 
 	if( 0 == canvas->gl_ui_tex ) {
@@ -109,14 +210,11 @@ canvas_ui_set_texture(canvas_t* canvas, texture2d_t tex) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	if( TEXF_A8R8G8B8 != tex.fmt ) {
-		fprintf(stderr, "ERROR: canvas_ui_set_texture: the ui texture is RGBA, given RGB...\n");
-		return false;
-	}
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, columns * TILE_WIDTH, rows * TILE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.columns * TILE_WIDTH, tex.rows * TILE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	canvas->ui_tex	= tex;
+	canvas->ui_tex.fmt	= TEXF_A8R8G8B8;
+	canvas->ui_tex.columns	= columns;
+	canvas->ui_tex.rows	= rows;
 
 	return true;
 }
@@ -140,11 +238,6 @@ canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const co
 		return false;
 	}
 
-	if( TEXF_A8R8G8B8 != canvas->ui_tex.fmt ) {
-		fprintf(stderr, "ERROR: canvas_ui_set_texture_tile: the ui texture is RGBA, given RGB...\n");
-		return false;
-	}
-
 	glBindTexture(GL_TEXTURE_2D, canvas->gl_ui_tex);
 	glTexSubImage2D(GL_TEXTURE_2D,
 			0,
@@ -159,7 +252,19 @@ canvas_ui_set_texture_tile(canvas_t* canvas, sint32 row, sint32 column, const co
 	return true;
 }
 
-//DLL_RENDERING_PUBLIC void			canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects);
+DLL_RENDERING_PUBLIC bool
+canvas_ui_render_batch(canvas_t* canvas, sint32 count, rm_batch2d_rect_t* rects) {
+
+	glfwMakeContextCurrent(canvas->window);
+	if( 0 == canvas->gl_ui_tex ) {
+		fprintf(stderr, "ERROR: canvas_ui_render_batch: no call canvas_ui_set_texture has been made before this call...\n");
+		return false;
+	}
+
+
+	return true;
+}
+
 //DLL_RENDERING_PUBLIC void			canvas_ui_push_region(canvas_t* canvas, rect_t r);
 //DLL_RENDERING_PUBLIC rect_t			canvas_ui_pop_region(canvas_t* canvas);
 //DLL_RENDERING_PUBLIC rect_t			canvas_ui_relative_top_region(canvas_t* canvas);
@@ -179,5 +284,22 @@ canvas_flush(canvas_t* canvas) {
 	glfwSwapBuffers(canvas->window);
 }
 
-//DLL_RENDERING_PUBLIC canvas_message_t		canvas_poll_message();
-//DLL_RENDERING_PUBLIC canvas_message_t		canvas_wait_message();
+DLL_RENDERING_PUBLIC bool
+canvas_poll_message(canvas_t* canvas, canvas_message_t* out) {
+	glfwPollEvents();
+	if( 0 < canvas->message_count ) {
+		*out	= pop_message(canvas);
+		return true;
+	} else return false;
+}
+
+DLL_RENDERING_PUBLIC canvas_message_t
+canvas_wait_message(canvas_t* canvas) {
+
+	// warning, this will block events on other threads using wait_message: better not to use
+	while( 0 == canvas->message_count ) {
+		glfwWaitEvents();
+	}
+
+	return pop_message(canvas);
+}

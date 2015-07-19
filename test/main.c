@@ -25,7 +25,14 @@ main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	canvas_t*	canvas	= canvas_create("canvas", 800, 480);
+	canvas_t*		canvas	= canvas_create("canvas", 800, 480);
+	canvas_clear(canvas);
+
+	canvas_message_t	msg;
+	do {
+		canvas_flush(canvas);
+		msg	= canvas_wait_message(canvas);
+	} while( CM_KEY_PRESS != msg.type );
 
 	canvas_release(canvas);
 	return 0;

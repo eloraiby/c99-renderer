@@ -24,13 +24,17 @@
 
 #include "../renderer.h"
 
-#define MAX_TITLE_SIZE	128
+#define MAX_TITLE_SIZE		128
+#define MAX_MSG_QUEUE_SIZE	4096
 
 struct canvas_s {
-	char		title[MAX_TITLE_SIZE];
-	GLFWwindow*	window;
-	texture2d_t	ui_tex;
-	GLuint		gl_ui_tex;
+	char			title[MAX_TITLE_SIZE];
+	GLFWwindow*		window;
+	texture2d_t		ui_tex;
+	GLuint			gl_ui_tex;
+	canvas_message_t	message_queue[MAX_MSG_QUEUE_SIZE];
+	uint32			message_start;
+	uint32			message_count;
 };
 
 #endif // CANVAS_H
