@@ -60,9 +60,9 @@ pop_message(canvas_t* canvas) {
 *******************************************************************************/
 static void
 key_callback(GLFWwindow* window, int key, int scan, int action, int modifiers) {
+	canvas_message_t	msg;
 	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
 	MODIFIER		mods	= 0;
-	canvas_message_t	msg;
 
 	if( modifiers && GLFW_MOD_ALT )		mods	|= CM_MOD_ALT;
 	if( modifiers && GLFW_MOD_CONTROL )	mods	|= CM_MOD_CONTROL;
@@ -79,8 +79,12 @@ key_callback(GLFWwindow* window, int key, int scan, int action, int modifiers) {
 
 static void
 character_callback(GLFWwindow* window, unsigned int codepoint) {
+	canvas_message_t	msg;
 	canvas_t*		canvas	= (canvas_t*)glfwGetWindowUserPointer(window);
+	msg.type	= CM_CHAR;
+	msg.code_point	= codepoint;
 
+	push_message(canvas, msg);
 }
 
 static void

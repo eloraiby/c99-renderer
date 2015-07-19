@@ -18,6 +18,8 @@
 */
 #include <renderer.h>
 
+#include <stdio.h>
+
 int
 main(int argc, char *argv[]) {
 	if( !renderer_init() ) {
@@ -27,12 +29,18 @@ main(int argc, char *argv[]) {
 
 	canvas_t*		canvas	= canvas_create("canvas", 800, 480);
 	canvas_clear(canvas);
+	canvas_flush(canvas);
+	canvas_flush(canvas);
 
 	canvas_message_t	msg;
 	do {
 		canvas_flush(canvas);
 		msg	= canvas_wait_message(canvas);
-	} while( CM_KEY_PRESS != msg.type );
+
+		if( CM_CHAR == msg.type ) {
+			fprintf(stderr, "%c", msg.code_point);
+		}
+	} while( !(CM_KEY_PRESS == msg.type && KEY_ESCAPE == msg.key_press_release.key) );
 
 	canvas_release(canvas);
 	return 0;
