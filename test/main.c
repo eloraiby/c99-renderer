@@ -22,12 +22,13 @@
 
 int
 main(int argc, char *argv[]) {
-	if( !renderer_init() ) {
+	rserver_t*	rserver	= NULL;
+	if( NULL == (rserver = renderer_init()) ) {
 		printf("failed to initialize renderer\n");
 		return 1;
 	}
 
-	canvas_t*		canvas	= canvas_create("canvas", 800, 480);
+	canvas_t*		canvas	= canvas_create(rserver, "canvas", 800, 480);
 
 	canvas_message_t	msg;
 	do {

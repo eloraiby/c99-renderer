@@ -81,12 +81,21 @@ typedef struct {
 
 MAKE_QUEUE(canvas_message_queue_t, cmqueue, canvas_message_t, MAX_MSG_QUEUE_SIZE)
 
+#define MAX_CANVAS		16
+
 struct canvas_s {
+	sint32			id;	// between 0 and MAX_CANVAS, -1 is empty
 	char			title[MAX_TITLE_SIZE];
 	GLFWwindow*		window;
 	texture2d_t		ui_tex;
 	GLuint			gl_ui_tex;
 	canvas_message_queue_t	message_queue;
+};
+
+
+struct rserver_s {
+	canvas_t		canvas[MAX_CANVAS];
+	uint32			canvas_count;
 };
 
 #endif // CANVAS_H

@@ -133,10 +133,28 @@ scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 /*******************************************************************************
+** rserver helpers
+*******************************************************************************/
+static canvas_t*
+get_free_canvas(rserver_t* server) {
+	for( size_t i = 0; t < MAX_CANVAS; ++t ) {
+		if( -1 == server->canvas[i].id ) {
+			memset(canvas, 0, sizeof(canvas_t));
+			server->canvas[i].id	= i;
+			return &(server->canvas[i]);
+		}
+	}
+	return NULL;
+}
+
+/*******************************************************************************
 ** public API
 *******************************************************************************/
 DLL_RENDERING_PUBLIC canvas_t*
-canvas_create(const char* title, sint32 width, sint32 height) {
+canvas_create(rserver_t* server, const char* title, sint32 width, sint32 height) {
+	canvas_t*	canvas	= get_free_canvas(server);
+
+	if( NULL == canvas )	return NULL;
 
 	GLFWwindow* win	= glfwCreateWindow(width, height, title, NULL, NULL);
 	if( NULL != win ) {
@@ -145,8 +163,7 @@ canvas_create(const char* title, sint32 width, sint32 height) {
 			int	major	= ogl_GetMajorVersion();
 			int	minor	= ogl_GetMinorVersion();
 			size_t tlen	= strlen(title);
-			canvas_t*	canvas	= (canvas_t*)malloc(sizeof(canvas_t));
-			memset(canvas, 0, sizeof(canvas_t));
+
 			canvas->window	= win;
 			memcpy(canvas->title, title, tlen > MAX_TITLE_SIZE - 1 ? MAX_TITLE_SIZE - 1 : tlen);
 
@@ -184,6 +201,7 @@ canvas_release(canvas_t* canvas) {
 		glDeleteTextures(1, &canvas->gl_ui_tex);
 	}
 	glfwDestroyWindow(canvas->window);
+	canvas->id	= -1;
 }
 
 DLL_RENDERING_PUBLIC rect_t

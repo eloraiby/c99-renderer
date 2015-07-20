@@ -20,14 +20,33 @@
 #include "renderer.h"
 #include "gl_core_2_1.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <GLFW/glfw3.h>
 
-DLL_RENDERING_PUBLIC bool
+#include "internal/canvas.h"
+
+
+
+DLL_RENDERING_PUBLIC rserver_t*
 renderer_init() {
-	if( glfwInit() == GL_TRUE ) {
-		return true;
-	} else {
-		return false;
+	static rserver_t	rserver;
+	static bool		initialized	= false;
+	if( !initialized ) {
+		memset(&rserver, 0, sizeof(rserver));
+		for( size_t i = 0; i < MAX_CANVAS; ++i ) {
+			rserver.canvas[i].id	= -1;	// set as free
+		}
+
+		if( GL_FALSE == glfwInit() ) {
+			return NULL;
+		}
+
+		initialized	= true;
 	}
+
+	return &rserver;
 }
 

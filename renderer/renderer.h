@@ -60,7 +60,8 @@ typedef enum {
 #define TILE_HEIGHT	64
 
 
-
+struct rserver_s;
+typedef struct rserver_s rserver_t;
 
 struct canvas_s;
 typedef struct canvas_s canvas_t;
@@ -248,9 +249,9 @@ typedef struct {
 	};
 } canvas_message_t;
 
-DLL_RENDERING_PUBLIC bool			renderer_init();
+DLL_RENDERING_PUBLIC rserver_t*			renderer_init();
 
-DLL_RENDERING_PUBLIC canvas_t*			canvas_create(const char* title, sint32 width, sint32 height);
+DLL_RENDERING_PUBLIC canvas_t*			canvas_create(rserver_t* server, const char* title, sint32 width, sint32 height);
 DLL_RENDERING_PUBLIC void			canvas_release(canvas_t* canvas);
 DLL_RENDERING_PUBLIC rect_t			canvas_get_screen_rect(canvas_t* canvas);
 DLL_RENDERING_PUBLIC void			canvas_set_screen_rect(canvas_t* canvas, rect_t r);
