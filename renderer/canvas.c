@@ -137,9 +137,9 @@ scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 *******************************************************************************/
 static canvas_t*
 get_free_canvas(rserver_t* server) {
-	for( size_t i = 0; t < MAX_CANVAS; ++t ) {
+	for( size_t i = 0; i < MAX_CANVAS; ++i ) {
 		if( -1 == server->canvas[i].id ) {
-			memset(canvas, 0, sizeof(canvas_t));
+			memset(&(server->canvas[i]), 0, sizeof(canvas_t));
 			server->canvas[i].id	= i;
 			return &(server->canvas[i]);
 		}

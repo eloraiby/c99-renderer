@@ -8,14 +8,13 @@
 # Used the glLoadGen to generate the gl_core_2_1 files, using:
 #	lua LoadGen.lua -style=pointer_c -spec=gl -version=2.1 -profile=core core_2_1
 #
-
 QT       -= core gui
 
 TARGET = renderer
 TEMPLATE = lib
 #CONFIG += staticlib
 
-QMAKE_CFLAGS	+= -DBUILDING_RENDERING_DLL
+QMAKE_CFLAGS	+= -DBUILDING_RENDERING_DLL -std=c99
 
 unix {
 	CONFIG	+= link_pkgconfig
@@ -29,7 +28,8 @@ SOURCES += \
 
 HEADERS += renderer.h \
     gl_core_2_1.h \
-    internal/canvas.h
+    internal/canvas.h \
+    internal/config.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

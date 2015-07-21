@@ -26,8 +26,7 @@
 
 #include "../renderer.h"
 
-#define MAX_TITLE_SIZE		128
-#define MAX_MSG_QUEUE_SIZE	4096
+#include "config.h"
 
 // 2d/ui texture
 typedef struct {
@@ -81,7 +80,7 @@ typedef struct {
 
 MAKE_QUEUE(canvas_message_queue_t, cmqueue, canvas_message_t, MAX_MSG_QUEUE_SIZE)
 
-#define MAX_CANVAS		16
+
 
 struct canvas_s {
 	sint32			id;	// between 0 and MAX_CANVAS, -1 is empty
