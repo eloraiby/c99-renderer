@@ -47,6 +47,8 @@ renderer_init() {
 		initialized	= true;
 	}
 
+	printf("renderer reserved memory: %fkb\n", sizeof(rserver) / 1024.0f);
+
 	return &rserver;
 }
 
